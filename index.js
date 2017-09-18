@@ -1,7 +1,7 @@
 const puppeteer = require('puppeteer');
 const StaticServer = require('static-server');
 
-async function automateBrowser() {
+async function automateBrowser({port}) {
 	const browser = await puppeteer.launch({
 		headless: false
 	});
@@ -14,7 +14,7 @@ async function automateBrowser() {
 
 		if (request.url === URLToIntercept) {
 			request.continue({
-				url: 'http://127.0.0.1:8080/form.txt'
+				url: `http://127.0.0.1:${port}/form.txt`
 			});
 		} else {
 			request.continue();
@@ -28,17 +28,22 @@ async function automateBrowser() {
 }
 
 function setupMockServer() {
-	const server = new StaticServer({
-		rootPath: './mocks',
-		port: 8080
-	});
+	return new Promise(resolve => {
+		const server = new StaticServer({
+			rootPath: './mocks',
+			port: 8080
+		});
 
-	server.start(() => console.log('Mock server started on port', server.port));
+		server.start(() => {
+			console.log('Mock server started on port', server.port);
+			resolve(server);
+		});
+	});
 }
 
-function main() {
-	setupMockServer();
-	automateBrowser();
+async function main() {
+	const {port} = await setupMockServer();
+	automateBrowser({port});
 }
 
 main();
